@@ -14,6 +14,7 @@
 #include "base/functional/bind.h"
 #include "base/memory/ref_counted.h"
 #include "base/test/bind.h"
+#include "base/threading/platform_thread.h"
 #include "base/time/time.h"
 #include "build/build_config.h"
 #include "net/base/address_list.h"
@@ -662,6 +663,17 @@ TEST_F(TCPSocketTest, IsConnected) {
   FD_SET(connecting_fd, &read_fds);
   ASSERT_EQ(select(FD_SETSIZE, &read_fds, nullptr, nullptr, nullptr), 1);
   ASSERT_TRUE(FD_ISSET(connecting_fd, &read_fds));
+#else
+  // Wait until data arrives on the socket (no longer idle).
+  {
+    const int kMaxAttempts = 100;
+    int attempts = 0;
+    while (connecting_socket.IsConnectedAndIdle() && attempts < kMaxAttempts) {
+      base::PlatformThread::Sleep(base::Milliseconds(10));
+      ++attempts;
+    }
+    ASSERT_LT(attempts, kMaxAttempts) << "Timed out waiting for data to arrive";
+  }
 #endif
 
   // It should now be reported as connected, but not as idle.
