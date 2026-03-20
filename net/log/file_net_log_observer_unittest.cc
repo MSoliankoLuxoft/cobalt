@@ -81,6 +81,10 @@ void AddEntries(FileNetLogObserver* logger,
   // |entry_size| cannot be smaller than the minimum event size.
   EXPECT_GE(entry_size, base_entry_size);
 
+  LOG(INFO) << "AddEntries: base_entry_size=" << base_entry_size
+            << " entry_size=" << entry_size
+            << " base_json=" << json;
+
   for (int i = 0; i < num_entries; i++) {
     source = NetLogSource(NetLogSourceType::HTTP2_SESSION, i);
     std::string id = base::NumberToString(i);
@@ -92,6 +96,15 @@ void AddEntries(FileNetLogObserver* logger,
     NetLogEntry entry(NetLogEventType::PAC_JAVASCRIPT_ERROR, source,
                       NetLogEventPhase::BEGIN, base::TimeTicks::Now(),
                       NetLogParamsWithString("message", message));
+
+    // Log actual size of first and last events to detect TimeTicks drift.
+    if (i == 0 || i == num_entries - 1) {
+      std::string actual_json;
+      base::JSONWriter::Write(entry.ToDict(), &actual_json);
+      LOG(INFO) << "AddEntries: event[" << i << "] actual_size="
+                << actual_json.size() << " expected=" << entry_size;
+    }
+
     logger->OnAddEntry(entry);
   }
 }
