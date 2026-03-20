@@ -649,14 +649,21 @@ void FileNetLogObserver::FileWriter::Flush(
       output_file = &final_log_file_;
     }
 
+    size_t event_json_size = local_file_queue.front()->size();
     size_t bytes_written =
         WriteToFile(output_file, *local_file_queue.front(), ",\n");
 
     wrote_event_bytes_ |= bytes_written > 0;
 
     // Keep track of the filesize for current event file when in bounded mode.
-    if (IsBounded())
+    if (IsBounded()) {
       current_event_file_size_ += bytes_written;
+      LOG(INFO) << "FileWriter: file_num=" << current_event_file_number_
+                << " event_json=" << event_json_size
+                << " bytes_written=" << bytes_written
+                << " file_size=" << current_event_file_size_
+                << " max=" << max_event_file_size_;
+    }
 
     local_file_queue.pop();
   }
