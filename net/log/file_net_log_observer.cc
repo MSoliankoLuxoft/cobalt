@@ -99,6 +99,10 @@ void AppendToFileThenDelete(const base::FilePath& source_path,
       base::File(source_path, base::File::FLAG_OPEN | base::File::FLAG_READ);
   DCHECK(source_file.IsValid());
 
+  int64_t file_length = source_file.GetLength();
+  LOG(INFO) << "AppendToFileThenDelete: " << source_path.value()
+            << " length=" << file_length;
+
   // Read |source_path|'s contents in chunks of read_buffer_size and append
   // to |destination_file|.
   size_t num_bytes_read;
