@@ -397,7 +397,16 @@ void File::DoInitialize(const FilePath& path, uint32_t flags) {
 
   int open_flags = 0;
   if (flags & FLAG_CREATE) {
-    open_flags = O_CREAT | O_EXCL;
+    // PS SDK: O_CREAT | O_EXCL does not create files.
+    // Emulate O_EXCL semantics: fail if file exists, create with O_TRUNC if not.
+    struct stat st;
+    if (stat(path.value().c_str(), &st) == 0) {
+      // File exists — O_EXCL should fail.
+      errno = EEXIST;
+      error_details_ = FILE_ERROR_EXISTS;
+      return;
+    }
+    open_flags = O_CREAT | O_TRUNC;
   }
 
   if (flags & FLAG_CREATE_ALWAYS) {
