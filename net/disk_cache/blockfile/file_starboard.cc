@@ -29,6 +29,9 @@ bool File::Init(const base::FilePath& name) {
   int flags = base::File::FLAG_OPEN | base::File::FLAG_READ |
               base::File::FLAG_WRITE;
   base_file_.Initialize(name, flags);
+  LOG(INFO) << "disk_cache::File::Init: " << name.value()
+            << " valid=" << base_file_.IsValid()
+            << " error=" << static_cast<int>(base_file_.error_details());
   return base_file_.IsValid();
 }
 

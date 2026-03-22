@@ -46,10 +46,16 @@ bool CreateCacheTestFile(const base::FilePath& name) {
               base::File::FLAG_WRITE;
 
   base::File file(name, flags);
+  LOG(INFO) << "CreateCacheTestFile: " << name.value()
+            << " valid=" << file.IsValid()
+            << " error=" << static_cast<int>(file.error_details());
   if (!file.IsValid())
     return false;
 
-  file.SetLength(4 * 1024 * 1024);
+  bool set_len = file.SetLength(4 * 1024 * 1024);
+  int64_t actual_len = file.GetLength();
+  LOG(INFO) << "CreateCacheTestFile: SetLength(4MB)=" << set_len
+            << " actual_length=" << actual_len;
   return true;
 }
 
