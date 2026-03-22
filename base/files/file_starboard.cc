@@ -443,6 +443,12 @@ void File::DoInitialize(const FilePath& path, uint32_t flags) {
     }
   }
 
+  // PS SDK open() with O_TRUNC does not truncate existing files.
+  // Explicitly truncate after opening.
+  if (descriptor >= 0 && (flags & FLAG_CREATE_ALWAYS)) {
+    ftruncate(descriptor, 0);
+  }
+
   if (descriptor >= 0 &&
       (flags & (FLAG_CREATE_ALWAYS | FLAG_CREATE))) {
     created_ = true;
