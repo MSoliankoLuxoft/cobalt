@@ -95,13 +95,22 @@ void AppendToFileThenDelete(const base::FilePath& source_path,
                             char* read_buffer,
                             size_t read_buffer_size) {
 #if defined(STARBOARD)
+  // Check if path is a directory (not a regular file).
+  bool is_dir = base::DirectoryExists(source_path);
+
   auto source_file =
       base::File(source_path, base::File::FLAG_OPEN | base::File::FLAG_READ);
-  DCHECK(source_file.IsValid());
 
-  int64_t file_length = source_file.GetLength();
+  int64_t file_length = source_file.IsValid() ? source_file.GetLength() : -1;
   LOG(INFO) << "AppendToFileThenDelete: " << source_path.value()
+            << " valid=" << source_file.IsValid()
+            << " is_dir=" << is_dir
             << " length=" << file_length;
+
+  if (!source_file.IsValid() || is_dir) {
+    // Skip directories or invalid files.
+    return;
+  }
 
   // Read |source_path|'s contents in chunks of read_buffer_size and append
   // to |destination_file|.
