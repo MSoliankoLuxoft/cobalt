@@ -76,7 +76,12 @@ class TestHttpClient {
   void Send(const std::string& data) {
     write_buffer_ = base::MakeRefCounted<DrainableIOBuffer>(
         base::MakeRefCounted<StringIOBuffer>(data), data.length());
+    write_loop_ = std::make_unique<base::RunLoop>();
     Write();
+    // Wait for all data to be written before returning,
+    // to avoid overlapping writes on platforms with small send buffers.
+    if (write_buffer_->BytesRemaining())
+      write_loop_->Run();
   }
 
   bool Read(std::string* message, int expected_bytes) {
@@ -133,8 +138,11 @@ class TestHttpClient {
   void OnWrite(int result) {
     ASSERT_GT(result, 0);
     write_buffer_->DidConsume(result);
-    if (write_buffer_->BytesRemaining())
+    if (write_buffer_->BytesRemaining()) {
       Write();
+    } else if (write_loop_) {
+      write_loop_->Quit();
+    }
   }
 
   void ReadInternal(TestCompletionCallback* callback) {
@@ -165,6 +173,7 @@ class TestHttpClient {
   scoped_refptr<IOBufferWithSize> read_buffer_;
   scoped_refptr<DrainableIOBuffer> write_buffer_;
   std::unique_ptr<TCPClientSocket> socket_;
+  std::unique_ptr<base::RunLoop> write_loop_;
 };
 
 struct ReceivedRequest {
